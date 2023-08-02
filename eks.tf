@@ -8,36 +8,25 @@
 # Example to consume eks_blueprints module
 #---------------------------------------------------------------
 # terraform destroy -auto-approve -target="module.eks_blueprints"
-module "eks" {
-  //source = "github.com/aws-ia/terraform-aws-eks-blueprints"
-  source  = "terraform-aws-modules/eks/aws"
-  
-  version = "~> 19.13"
 
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+
+  version = "~> 19.13"
+  
   # EKS CONTROL PLANE VARIABLES
   cluster_name    = local.cluster_name
-  cluster_version = local.version
+  cluster_version = "1.27"
 
   cluster_addons = {
-    coredns    = {}
-    kube-proxy = {}
+    coredns = {
+      most_recent = true
+    }
+    kube-proxy = {
+      most_recent = true
+    }
     vpc-cni = {
-      # Specify the VPC CNI addon should be deployed before compute to ensure
-      # the addon is configured before data plane compute resources are created
-      # See README for further details
-      before_compute = true
-      most_recent    = true # To ensure access to the latest settings provided
-      configuration_values = jsonencode({
-        env = {
-          # Reference https://aws.github.io/aws-eks-best-practices/reliability/docs/networkmanagement/#cni-custom-networking
-          AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG = "true"
-          ENI_CONFIG_LABEL_DEF               = "topology.kubernetes.io/zone"
-
-          # Reference docs https://docs.aws.amazon.com/eks/latest/userguide/cni-increase-ip-addresses.html
-          ENABLE_PREFIX_DELEGATION = "true"
-          WARM_PREFIX_TARGET       = "1"
-        }
-      })
+      most_recent = true
     }
   }
 
@@ -49,7 +38,7 @@ module "eks" {
     aws_subnet.public_1.id, # 192.168.11.0/24
     aws_subnet.public_2.id, # 192.168.12.0/24
     aws_subnet.public_3.id, # 192.168.13.0/24
-
+  
     # APP EKS - Application pods with live on nodegroups located on these subnets
     aws_subnet.private_1.id, # 192.168.21.0/24
     aws_subnet.private_2.id, # 192.168.22.0/24
@@ -72,11 +61,20 @@ module "eks" {
     aws_subnet.private_c3.id, # 192.168.113.0/24
   ]
 
+    # EKS Managed Node Group(s)
+  eks_managed_node_group_defaults = {
+    ami_type       = "AL2_x86_64"
+    instance_types = ["t3.medium"]
+
+    attach_cluster_primary_security_group = true
+  }
+
   # A map of tags to assign to the resource.
   tags = merge(
     local.tags,
     {
-      cluster_name    = local.cluster_name
+      cluster_name    = local.cluster_name,
+      GithubRepo      = "github.com/aws-ia/terraform-aws-eks-blueprints",
     }
   )
 
@@ -112,11 +110,6 @@ module "eks" {
         tier = "app"
       }
 
-      # SSH ACCESS Optional - Recommended to use SSM Session manager
-      #      remote_access         = true
-      #      ec2_ssh_key           = aws_key_pair.my-pub-key.id
-      #      ssh_security_group_id = [aws_security_group.sg_management_ssh.id]
-
       # A map of tags to assign to the resource.
       additional_tags = merge(
         local.tags,
@@ -130,7 +123,7 @@ module "eks" {
 
     /*db_ng = {
       node_group_name = "db_ng"
-      instance_types  = ["t3.large"]
+      instance_types  = ["t3.medium"]
       ami_type        = "AL2_x86_64" # Available options -> AL2_x86_64, AL2_x86_64_GPU, AL2_ARM_64, CUSTOM
 
       desired_size = 6 # Node Group scaling configuration
@@ -153,11 +146,6 @@ module "eks" {
         tier = "db"
       }
 
-      # SSH ACCESS Optional - Recommended to use SSM Session manager
-      #      remote_access         = true
-      #      ec2_ssh_key           = aws_key_pair.my-pub-key.id
-      #      ssh_security_group_id = [aws_security_group.sg_management_ssh.id]
-
       # A map of tags to assign to the resource.
       additional_tags = merge(
         local.tags,
@@ -168,18 +156,11 @@ module "eks" {
       )
     }
     */
-    # man_ng
 
   }
 }
 
-# output "eks_cluster_id" {
-#   description = "EKS cluster ID"
-#   value       = module.eks_blueprints.eks_cluster_id
-# }
-
-
-# aws eks update-kubeconfig \
-#--region af-south-1 \
-#--name epay-lab \
-#--profile applab
+output "configure_kubectl" {
+  description = "Configure kubectl: make sure you're logged in with the correct AWS profile and run the following command to update your kubeconfig"
+  value       = "aws eks --region ${local.region} update-kubeconfig --name ${module.eks.cluster_name} --profile ${local.profile}"
+}
