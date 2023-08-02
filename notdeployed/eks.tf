@@ -11,38 +11,68 @@
 module "eks" {
   //source = "github.com/aws-ia/terraform-aws-eks-blueprints"
   source  = "terraform-aws-modules/eks/aws"
+  
   version = "~> 19.13"
-
-  vpc_id      = aws_vpc.main.id
 
   # EKS CONTROL PLANE VARIABLES
   cluster_name    = local.cluster_name
   cluster_version = local.version
 
+  cluster_addons = {
+    coredns    = {}
+    kube-proxy = {}
+    vpc-cni = {
+      # Specify the VPC CNI addon should be deployed before compute to ensure
+      # the addon is configured before data plane compute resources are created
+      # See README for further details
+      before_compute = true
+      most_recent    = true # To ensure access to the latest settings provided
+      configuration_values = jsonencode({
+        env = {
+          # Reference https://aws.github.io/aws-eks-best-practices/reliability/docs/networkmanagement/#cni-custom-networking
+          AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG = "true"
+          ENI_CONFIG_LABEL_DEF               = "topology.kubernetes.io/zone"
+
+          # Reference docs https://docs.aws.amazon.com/eks/latest/userguide/cni-increase-ip-addresses.html
+          ENABLE_PREFIX_DELEGATION = "true"
+          WARM_PREFIX_TARGET       = "1"
+        }
+      })
+    }
+  }
+
+  vpc_id      = aws_vpc.main.id
+
   # This links into resource based vpc/subnets/natgw/igw etc
   subnet_ids = [
+    # The Web interface layer / ip's subnets, this is where the nginx/LB lives
     aws_subnet.public_1.id, # 192.168.11.0/24
     aws_subnet.public_2.id, # 192.168.12.0/24
     aws_subnet.public_3.id, # 192.168.13.0/24
-    # APP EKS
+
+    # APP EKS - Application pods with live on nodegroups located on these subnets
     aws_subnet.private_1.id, # 192.168.21.0/24
     aws_subnet.private_2.id, # 192.168.22.0/24
     aws_subnet.private_3.id, # 192.168.23.0/24
 
-    # DB EKS
+    # DB EKS - databse pods with live on nodegroups located on these subnets
     aws_subnet.private_4.id, # 192.168.31.0/24
     aws_subnet.private_5.id, # 192.168.32.0/24
     aws_subnet.private_6.id, # 192.168.33.0/24
     
-    # Management EKS
+    # Management EKS - Managment Tooling pods with live on nodegroups located on these subnets
     aws_subnet.private_7.id, # 192.168.41.0/24
     aws_subnet.private_8.id, # 192.168.42.0/24
     aws_subnet.private_9.id, # 192.168.43.0/24
   ]
-  
+
+  control_plane_subnet_ids = [
+    aws_subnet.private_c1.id, # 192.168.111.0/24
+    aws_subnet.private_c2.id, # 192.168.112.0/24
+    aws_subnet.private_c3.id, # 192.168.113.0/24
+  ]
 
   # A map of tags to assign to the resource.
-
   tags = merge(
     local.tags,
     {

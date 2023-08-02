@@ -319,3 +319,61 @@ resource "aws_subnet" "public_5" {
     }
   )
 }
+
+# EKS Control Plane
+resource "aws_subnet" "private_c1" {
+  # The VPC ID
+  vpc_id = aws_vpc.main.id
+
+  # The CIDR block for the subnet.
+  cidr_block = "192.168.111.0/24"
+
+  # The AZ for the subnet.
+  availability_zone = "af-south-1a"
+
+  # A map of tags to assign to the resource.
+  tags = merge(
+    local.tags,
+    {
+      Name  = "sn-pvt-cplane-eks-af-south-1a",
+    }
+  )
+}
+
+resource "aws_subnet" "private_c2" {
+  # The VPC ID
+  vpc_id = aws_vpc.main.id
+
+  # The CIDR block for the subnet.
+  cidr_block = "192.168.112.0/24"
+
+  # The AZ for the subnet.
+  availability_zone = "af-south-1b"
+
+  # A map of tags to assign to the resource.
+  tags = merge(
+    local.tags,
+    {
+      Name  = "sn-pvt-cplane-eks-af-south-1b",
+    }
+  )
+}
+
+resource "aws_subnet" "private_c3" {
+  # The VPC ID
+  vpc_id = aws_vpc.main.id
+
+  # The CIDR block for the subnet.
+  cidr_block = "192.168.113.0/24"
+
+  # The AZ for the subnet.
+  availability_zone = "af-south-1c"
+
+  # A map of tags to assign to the resource.
+  tags = merge(
+    local.tags,
+    {
+      Name  = "sn-pvt-cplane-eks-af-south-1c",
+    }
+  )
+}
