@@ -17,6 +17,7 @@ module "eks" {
   # EKS CONTROL PLANE VARIABLES
   cluster_name    = local.cluster_name
   cluster_version = "1.27"
+  cluster_endpoint_public_access = true # Backwards compat
 
   cluster_addons = {
     coredns = {

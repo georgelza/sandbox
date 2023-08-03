@@ -5,43 +5,36 @@ module "eks_blueprints_kubernetes_addons" {
   source = "aws-ia/eks-blueprints-addons/aws"
   version = "~> 1.0" #ensure to update this to the latest/desired version
 
-  depends_on                   = [module.eks.managed_node_groups]
+  depends_on        = [module.eks.managed_node_groups]
 
   cluster_name      = module.eks.cluster_name
   cluster_endpoint  = module.eks.cluster_endpoint
   cluster_version   = module.eks.cluster_version
   oidc_provider_arn = module.eks.oidc_provider_arn
 
-  eks_addons = {
-    aws-ebs-csi-driver = {
-      most_recent = true
-    }
-    coredns = {
-      most_recent = true
-    }
-    vpc-cni = {
-      most_recent = true
-    }
-    kube-proxy = {
-      most_recent = true
-    }
-  }
-
 
   # EKS Managed Add-ons
 
   enable_aws_load_balancer_controller     = true
-  enable_external_dns                     = true
-  enable_cluster_proportional_autoscaler  = true
   enable_ingress_nginx                    = true
 
+  enable_cluster_proportional_autoscaler  = false
+  enable_external_dns                     = false
   enable_metrics_server                   = false
   enable_aws_cloudwatch_metrics           = false
   enable_karpenter                        = false
   enable_kube_prometheus_stack            = false
   enable_cert_manager                     = false
 
-  tags = local.tags
+  tags = merge(
+    local.tags,
+    {
+      cluster_name    = local.cluster_name,
+      GithubRepo      = "github.com/aws-ia/eks-blueprints-addons/aws",
+      Blueprint       = local.name,
+
+    }
+  )
 
 }
 
