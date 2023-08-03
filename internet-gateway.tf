@@ -9,7 +9,7 @@ resource "aws_internet_gateway" "main" {
   tags = merge(
     local.tags,
     {
-      Name = "igw-${var.vpc_name}"
+      Name = "igw-${local.vpc_name}"
     }
   )
 }

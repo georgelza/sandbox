@@ -10,13 +10,12 @@ locals {
   cluster_name  = var.cluster_name
   name          = basename(path.cwd)
   version       = var.versions
+  tf_s3_bucket  = var.terraform_s3_bucket
 
   kubeconfig   = "./kubeconfig"
 
   # Add merge statement into the various resources to use this + whats required locally.
   tags = {
-    Blueprint   = local.name,
-    GithubRepo  = "github.com/aws-ia/terraform-aws-eks-blueprints",
     
     Owner       = var.owner,
     Workload    = var.project,

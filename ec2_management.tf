@@ -48,10 +48,4 @@ resource "aws_instance" "jumpserver" {
   # Apply - chmod 400 iamzanet.pem
 }
 
-output "ec2_jumpserver_public_ips" {
-  value       = aws_instance.jumpserver.*.public_ip
-  description = "ec2_jumpserver_public_ips "
-  sensitive   = false
-}
-
 

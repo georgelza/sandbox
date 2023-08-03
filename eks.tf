@@ -12,7 +12,7 @@
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
 
-  version = "~> 19.13"
+  version = "~> 19.15.1"
   
   # EKS CONTROL PLANE VARIABLES
   cluster_name    = local.cluster_name
@@ -28,7 +28,15 @@ module "eks" {
     vpc-cni = {
       most_recent = true
     }
+    aws-ebs-csi-driver = {
+      most_recent = true
+    }
   }
+
+  # iam_role_additional_policies = {
+  #   additional = aws_iam_policy.additional.arn
+  # }
+
 
   vpc_id      = aws_vpc.main.id
 
@@ -75,6 +83,8 @@ module "eks" {
     {
       cluster_name    = local.cluster_name,
       GithubRepo      = "github.com/aws-ia/terraform-aws-eks-blueprints",
+      Blueprint       = local.name,
+
     }
   )
 
@@ -114,7 +124,8 @@ module "eks" {
       additional_tags = merge(
         local.tags,
         {
-          subnet_type = "private"
+          cluster_name    = local.cluster_name,
+          subnet_type     = "private"
 
         },
       )
@@ -150,7 +161,8 @@ module "eks" {
       additional_tags = merge(
         local.tags,
         {
-          subnet_type = "private"
+          cluster_name    = local.cluster_name,
+          subnet_type     = "private"
 
         },
       )
@@ -160,7 +172,3 @@ module "eks" {
   }
 }
 
-output "configure_kubectl" {
-  description = "Configure kubectl: make sure you're logged in with the correct AWS profile and run the following command to update your kubeconfig"
-  value       = "aws eks --region ${local.region} update-kubeconfig --name ${module.eks.cluster_name} --profile ${local.profile}"
-}

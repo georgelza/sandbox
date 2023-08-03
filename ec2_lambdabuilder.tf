@@ -48,10 +48,5 @@ resource "aws_instance" "lambdabuilder" {
   # Apply - chmod 400 iamzanet.pem
 }
 
-output "ec2_lambdabuilder_public_ips" {
-  value       = aws_instance.lambdabuilder.*.public_ip
-  description = "ec2_lambdabuilder_public_ips "
-  sensitive   = false
-}
 
 
